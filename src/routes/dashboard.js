@@ -13,10 +13,10 @@ router.get('/admin', authenticate, requireAdmin, async (req, res, next) => {
       db.query('SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE status=$1) as occupied FROM apartments WHERE building_id=$2', ['dolu', building_id]),
       db.query(`SELECT
         COUNT(*) as total,
-        COUNT(*) FILTER (WHERE status='ödendi') as paid,
-        COUNT(*) FILTER (WHERE status='bekliyor') as pending,
-        COUNT(*) FILTER (WHERE status='gecikmiş') as overdue,
-        COALESCE(SUM(amount) FILTER (WHERE status='ödendi'), 0) as collected
+        COUNT(*) FILTER (WHERE p.status='ödendi') as paid,
+        COUNT(*) FILTER (WHERE p.status='bekliyor') as pending,
+        COUNT(*) FILTER (WHERE p.status='gecikmiş') as overdue,
+        COALESCE(SUM(p.amount) FILTER (WHERE p.status='ödendi'), 0) as collected
         FROM payments p JOIN apartments a ON p.apartment_id=a.id
         WHERE a.building_id=$1 AND p.period=$2`, [building_id, period]),
       db.query(`SELECT
