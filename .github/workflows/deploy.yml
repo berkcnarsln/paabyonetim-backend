@@ -1,0 +1,25 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sunucuya bağlan ve deploy et
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /opt/paabyonetim
+            git pull origin main
+            docker compose build --no-cache api
+            docker compose up -d --no-deps api nginx
+            docker compose exec -T api node src/db/migrate.js || true
+            docker image prune -f
+            echo "Deploy tamamlandı: $(date)"
