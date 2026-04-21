@@ -54,7 +54,9 @@ router.get('/resident', authenticate, async (req, res, next) => {
       db.query('SELECT * FROM payments WHERE apartment_id=$1 ORDER BY period DESC LIMIT 6', [apartment_id]),
       db.query('SELECT * FROM repairs WHERE apartment_id=$1 ORDER BY created_at DESC LIMIT 5', [apartment_id]),
       db.query(`SELECT id, title, priority, created_at FROM announcements
-        WHERE building_id=(SELECT building_id FROM apartments WHERE id=$1) AND deleted_at IS NULL
+        WHERE building_id=(SELECT building_id FROM apartments WHERE id=$1)
+        AND deleted_at IS NULL
+        AND (apartment_id IS NULL OR apartment_id = $1)
         ORDER BY created_at DESC LIMIT 5`, [apartment_id]),
     ]);
 

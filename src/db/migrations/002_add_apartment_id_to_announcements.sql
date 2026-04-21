@@ -1,0 +1,2 @@
+ALTER TABLE announcements
+  ADD COLUMN IF NOT EXISTS apartment_id INTEGER REFERENCES apartments(id) ON DELETE SET NULL;

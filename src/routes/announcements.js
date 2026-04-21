@@ -4,16 +4,26 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    const { building_id, priority } = req.query;
+    const { building_id, apartment_id, priority } = req.query;
     let sql = `
-      SELECT a.*, u.name as created_by_name
+      SELECT a.*, u.name as created_by_name,
+             ap.unit_number as target_unit, ap.block as target_block
       FROM announcements a
       LEFT JOIN users u ON a.created_by = u.id
+      LEFT JOIN apartments ap ON a.apartment_id = ap.id
       WHERE a.deleted_at IS NULL
     `;
     const params = [];
 
     if (building_id) { params.push(building_id); sql += ` AND a.building_id = $${params.length}`; }
+
+    if (apartment_id && apartment_id !== 'null' && apartment_id !== 'undefined') {
+      params.push(apartment_id);
+      sql += ` AND (a.apartment_id IS NULL OR a.apartment_id = $${params.length})`;
+    } else if (!apartment_id) {
+      // admin sorgusu — hepsini getir
+    }
+
     if (priority) { params.push(priority); sql += ` AND a.priority = $${params.length}`; }
 
     sql += ' ORDER BY a.created_at DESC';
@@ -42,15 +52,15 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
 router.post('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { building_id, title, content, priority } = req.body;
+    const { building_id, title, content, priority, apartment_id } = req.body;
     if (!building_id || !title || !content) {
       return res.status(400).json({ error: 'Bina, başlık ve içerik gerekli' });
     }
 
     const { rows } = await db.query(
-      `INSERT INTO announcements (building_id, title, content, priority, created_by)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [building_id, title, content, priority || 'normal', req.user.id]
+      `INSERT INTO announcements (building_id, apartment_id, title, content, priority, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [building_id, apartment_id || null, title, content, priority || 'normal', req.user.id]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
