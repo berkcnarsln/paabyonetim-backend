@@ -4,7 +4,7 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    const { building_id, apartment_id, status } = req.query;
+    const { building_id, apartment_id, reported_by, status } = req.query;
     let sql = `
       SELECT r.*, a.unit_number, a.block,
              u1.name as reported_by_name,
@@ -19,6 +19,7 @@ router.get('/', authenticate, async (req, res, next) => {
 
     if (building_id) { params.push(building_id); sql += ` AND r.building_id = $${params.length}`; }
     if (apartment_id) { params.push(apartment_id); sql += ` AND r.apartment_id = $${params.length}`; }
+    if (reported_by) { params.push(reported_by); sql += ` AND r.reported_by = $${params.length}`; }
     if (status) { params.push(status); sql += ` AND r.status = $${params.length}`; }
 
     sql += ' ORDER BY r.created_at DESC';
