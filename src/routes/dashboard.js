@@ -26,7 +26,7 @@ router.get('/admin', authenticate, requireAdmin, async (req, res, next) => {
         COUNT(*) FILTER (WHERE status='tamamlandı') as completed
         FROM repairs WHERE building_id=$1`, [building_id]),
       db.query('SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE building_id=$1 AND period=$2', [building_id, period]),
-      db.query('SELECT id, title, priority, created_at FROM announcements WHERE building_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 5', [building_id]),
+      db.query('SELECT id, title, priority, created_at, apartment_id FROM announcements WHERE building_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 10', [building_id]),
     ]);
 
     res.json({
