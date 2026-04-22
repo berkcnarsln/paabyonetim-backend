@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const errorHandler = require('./middleware/errorHandler');
+const tenantMiddleware = require('./middleware/tenant');
 
 const app = express();
 
@@ -11,7 +12,16 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // server-to-server or same-origin
+    const allowed = process.env.ALLOWED_ORIGINS?.split(',') || [];
+    // Allow any *.paabyonetim.com subdomain + exact matches
+    const isAllowed =
+      allowed.includes(origin) ||
+      /^https?:\/\/([a-z0-9-]+\.)?paabyonetim\.com$/.test(origin) ||
+      /^https?:\/\/localhost(:\d+)?$/.test(origin);
+    callback(isAllowed ? null : new Error('CORS not allowed'), isAllowed);
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -21,6 +31,8 @@ app.use('/api/', rateLimit({
   max: 200,
   message: { error: 'Çok fazla istek gönderildi, lütfen bekleyin' },
 }));
+
+app.use('/api/', tenantMiddleware);
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/buildings', require('./routes/buildings'));

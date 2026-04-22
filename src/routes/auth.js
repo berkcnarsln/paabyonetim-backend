@@ -21,6 +21,11 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
     }
 
+    // Tenant izolasyonu: kullanıcı bu siteye ait olmalı
+    if (req.tenant && user.building_id !== req.tenant.id) {
+      return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
+    }
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
