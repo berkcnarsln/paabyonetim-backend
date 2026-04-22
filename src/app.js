@@ -34,6 +34,12 @@ app.use('/api/', rateLimit({
 
 app.use('/api/', tenantMiddleware);
 
+// Public: tenant bilgisi (auth gerektirmez)
+app.get('/api/tenant', (req, res) => {
+  if (!req.tenant) return res.status(404).json({ error: 'Tenant bulunamadı' });
+  res.json({ id: req.tenant.id, name: req.tenant.name, subdomain: req.tenant.subdomain });
+});
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/buildings', require('./routes/buildings'));
 app.use('/api/apartments', require('./routes/apartments'));
