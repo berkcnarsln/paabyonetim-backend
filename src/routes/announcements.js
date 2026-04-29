@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { sendPushToBuilding } = require('../utils/push');
 
 router.get('/', authenticate, async (req, res, next) => {
   try {
@@ -62,6 +63,8 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
       [building_id, apartment_id || null, title, content, priority || 'normal', req.user.id]
     );
+    // Push bildirim gönder (fire-and-forget)
+    sendPushToBuilding(building_id, `📣 ${title}`, content.substring(0, 100));
     res.status(201).json(rows[0]);
   } catch (err) {
     next(err);

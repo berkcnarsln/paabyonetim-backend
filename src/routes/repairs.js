@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { sendPushToBuilding } = require('../utils/push');
 
 router.get('/', authenticate, async (req, res, next) => {
   try {
@@ -52,16 +53,18 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
 router.post('/', authenticate, async (req, res, next) => {
   try {
-    const { building_id, apartment_id, title, description } = req.body;
+    const { building_id, apartment_id, title, description, photo_data, photo_type } = req.body;
     if (!building_id || !title) {
       return res.status(400).json({ error: 'Bina ve konu gerekli' });
     }
 
     const { rows } = await db.query(
-      `INSERT INTO repairs (building_id, apartment_id, title, description, reported_by)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [building_id, apartment_id, title, description, req.user.id]
+      `INSERT INTO repairs (building_id, apartment_id, title, description, reported_by, photo_data, photo_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [building_id, apartment_id, title, description, req.user.id, photo_data || null, photo_type || null]
     );
+    // Admini bildir
+    sendPushToBuilding(building_id, `🔧 Yeni Arıza Bildirimi`, title, null, true);
     res.status(201).json(rows[0]);
   } catch (err) {
     next(err);
@@ -84,6 +87,10 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       [title, description, status, assigned_to, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Arıza bulunamadı' });
+    // Arıza tamamlandıysa sahibini bildir
+    if (status === 'tamamlandi' && rows[0].reported_by) {
+      sendPushToBuilding(rows[0].building_id, `✅ Arızanız Tamamlandı`, rows[0].title, [rows[0].reported_by]);
+    }
     res.json(rows[0]);
   } catch (err) {
     next(err);

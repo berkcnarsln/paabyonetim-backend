@@ -49,6 +49,15 @@ app.use('/api/repairs', require('./routes/repairs'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/maintenance', require('./routes/maintenance'));
+app.use('/api/documents', require('./routes/documents'));
+app.use('/api/surveys', require('./routes/surveys'));
+app.use('/api/reservations', require('./routes/reservations'));
+app.use('/api/visitors', require('./routes/visitors'));
+app.use('/api/staff', require('./routes/staff'));
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/push-tokens', require('./routes/push-tokens'));
+app.use('/api/reports', require('./routes/reports'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'PaaBYonetim API' }));
 
