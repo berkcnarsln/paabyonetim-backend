@@ -13,8 +13,9 @@ router.get('/monthly', authenticate, requireAdmin, async (req, res, next) => {
 
     const [payments, expenses, repairs, apartments, announcements] = await Promise.all([
       db.query(
-        `SELECT status, COUNT(*) as count, SUM(amount) as total
-         FROM payments WHERE building_id = $1 AND period = $2 GROUP BY status`,
+        `SELECT p.status, COUNT(*) as count, SUM(p.amount) as total
+         FROM payments p JOIN apartments a ON p.apartment_id = a.id
+         WHERE a.building_id = $1 AND p.period = $2 GROUP BY p.status`,
         [building_id, period]
       ),
       db.query(
@@ -38,7 +39,7 @@ router.get('/monthly', authenticate, requireAdmin, async (req, res, next) => {
     const paymentStats = {};
     payments.rows.forEach(r => { paymentStats[r.status] = { count: parseInt(r.count), total: parseFloat(r.total || 0) }; });
 
-    const totalIncome = paymentStats['odendi']?.total || 0;
+    const totalIncome = paymentStats['ödendi']?.total || 0;
     const totalExpense = expenses.rows.reduce((s, r) => s + parseFloat(r.total), 0);
 
     res.json({
@@ -47,9 +48,9 @@ router.get('/monthly', authenticate, requireAdmin, async (req, res, next) => {
       generated_at: new Date().toISOString(),
       apartments: { total: parseInt(apartments.rows[0]?.total || 0) },
       payments: {
-        paid: paymentStats['odendi'] || { count: 0, total: 0 },
+        paid: paymentStats['ödendi'] || { count: 0, total: 0 },
         pending: paymentStats['bekliyor'] || { count: 0, total: 0 },
-        overdue: paymentStats['gecikmis'] || { count: 0, total: 0 },
+        overdue: paymentStats['gecikmiş'] || { count: 0, total: 0 },
         total_income: totalIncome,
       },
       expenses: {
