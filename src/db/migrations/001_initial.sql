@@ -116,14 +116,20 @@ END;
 $$;
 
 -- Varsayılan admin kullanıcısı (şifre: Admin1234!)
-INSERT INTO buildings (name, address, city) VALUES ('PaaBYonetim Merkez', 'Merkez Mah. No:1', 'İstanbul')
-ON CONFLICT DO NOTHING;
+-- Idempotent: aynı isimde bina varsa eklemez (UNIQUE constraint yerine WHERE NOT EXISTS)
+INSERT INTO buildings (name, address, city)
+SELECT 'PaaBYonetim Merkez', 'Merkez Mah. No:1', 'İstanbul'
+WHERE NOT EXISTS (
+  SELECT 1 FROM buildings WHERE name = 'PaaBYonetim Merkez'
+);
 
 INSERT INTO users (email, password_hash, name, role, building_id)
-VALUES (
+SELECT
   'admin@paabyonetim.com',
   '$2a$10$rqJ3b8QzEMH1vvB9pDnmVePl5eK0v/qW/S7N9YRhvKTW9MHlEkVdK',
   'Sistem Yöneticisi',
   'admin',
-  1
-) ON CONFLICT (email) DO NOTHING;
+  (SELECT id FROM buildings WHERE name = 'PaaBYonetim Merkez' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM users WHERE email = 'admin@paabyonetim.com'
+);
