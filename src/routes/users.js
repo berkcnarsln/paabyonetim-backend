@@ -94,6 +94,39 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
   }
 });
 
+router.post('/:id/reset-password', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows: targets } = await db.query(
+      'SELECT id, email, name, building_id FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (!targets[0]) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    if (req.user.building_id !== targets[0].building_id) {
+      return res.status(403).json({ error: 'Bu kullanıcıyı yönetme yetkiniz yok' });
+    }
+
+    const newPassword = generatePassword(10);
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, targets[0].id]);
+
+    res.json({
+      message: 'Şifre sıfırlandı',
+      user: { id: targets[0].id, email: targets[0].email, name: targets[0].name },
+      new_password: newPassword,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function generatePassword(len = 10) {
+  const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
 router.delete('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     if (req.user.id === parseInt(req.params.id)) {
