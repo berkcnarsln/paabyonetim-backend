@@ -5,6 +5,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const errorHandler = require('./middleware/errorHandler');
 const tenantMiddleware = require('./middleware/tenant');
+const { requireFeature } = require('./middleware/tenant');
 
 const app = express();
 
@@ -37,7 +38,14 @@ app.use('/api/', tenantMiddleware);
 // Public: tenant bilgisi (auth gerektirmez)
 app.get('/api/tenant', (req, res) => {
   if (!req.tenant) return res.status(404).json({ error: 'Tenant bulunamadı' });
-  res.json({ id: req.tenant.id, name: req.tenant.name, subdomain: req.tenant.subdomain });
+  res.json({
+    id: req.tenant.id,
+    name: req.tenant.name,
+    subdomain: req.tenant.subdomain,
+    plan: req.tenant.plan,
+    features: req.tenant.features,
+    settings: req.tenant.settings,
+  });
 });
 
 app.use('/api/auth', require('./routes/auth'));
@@ -49,13 +57,13 @@ app.use('/api/repairs', require('./routes/repairs'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/maintenance', require('./routes/maintenance'));
-app.use('/api/documents', require('./routes/documents'));
-app.use('/api/surveys', require('./routes/surveys'));
-app.use('/api/reservations', require('./routes/reservations'));
-app.use('/api/visitors', require('./routes/visitors'));
-app.use('/api/staff', require('./routes/staff'));
-app.use('/api/messages', require('./routes/messages'));
+app.use('/api/maintenance', requireFeature('maintenance'), require('./routes/maintenance'));
+app.use('/api/documents', requireFeature('documents'), require('./routes/documents'));
+app.use('/api/surveys', requireFeature('surveys'), require('./routes/surveys'));
+app.use('/api/reservations', requireFeature('reservations'), require('./routes/reservations'));
+app.use('/api/visitors', requireFeature('visitors'), require('./routes/visitors'));
+app.use('/api/staff', requireFeature('staff'), require('./routes/staff'));
+app.use('/api/messages', requireFeature('messaging'), require('./routes/messages'));
 app.use('/api/push-tokens', require('./routes/push-tokens'));
 app.use('/api/reports', require('./routes/reports'));
 
